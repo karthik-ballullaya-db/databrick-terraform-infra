@@ -1,8 +1,7 @@
 {
   "enabled": true,
-  "network_connectivity_config_id": "${module.ncc_configs[\"sj_ncc\"].network_connectivity_config_id}",
-  "resource_id": "${module.storage_accounts[\"sjstorageacc\"].id}",
+  "ncc_key": "sj_ncc",
+  "storage_account_key": "sjstorageacc",
   "group_id": "blob",
-  "comment": "Creates a private endpoint rule for storage account Blob service. Required for Unity Catalog external locations using abfss:// protocol. Both NCC ID and storage account resource ID are dynamically referenced."
+  "comment": "Creates a private endpoint rule for storage account Blob service. ncc_key -> resources/databricks/account/ncc/<key>.json, storage_account_key -> resources/azure/storage_accounts/<key>.json"
 }
-

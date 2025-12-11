@@ -2,8 +2,6 @@
   "enabled": true,
   "name": "sj_ncc",
   "region": "eastus",
-  "workspace_ids": [
-    "${module.workspaces[\"sjwstest2\"].workspace_id}"
-  ],
-  "comment": "Network Connectivity Config for private connectivity to Databricks control plane. Bound to sjwstest2 workspace to enable serverless compute to use NCC private endpoints."
+  "workspace_keys": ["sjwstest2"],
+  "comment": "Network Connectivity Config for private connectivity to Databricks control plane. workspace_keys references resources/azure/workspaces/<key>.json"
 }

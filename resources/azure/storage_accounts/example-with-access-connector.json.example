@@ -10,10 +10,9 @@
   "network_rules": {
     "default_action": "Deny",
     "bypass": ["AzureServices", "Logging", "Metrics"],
-    "virtual_network_subnet_ids": [
-      "${module.workspaces[\"my-workspace\"].subnet_ids[\"snet-workspace-private-endpoints\"]}"
-    ],
-    "comment": "Allow access from workspace subnet with service endpoints. The subnet is dynamically referenced from workspace module output."
+    "vnet_key": "my-vnet",
+    "subnet_names": ["snet-private-endpoints"],
+    "comment": "Allow access from specified subnets. vnet_key and subnet_names are resolved to actual subnet IDs."
   },
   "containers": [
     {
@@ -25,13 +24,15 @@
       "container_access_type": "private"
     }
   ],
-  "access_connector_id": "${module.access_connectors[\"ac-databricks-dev\"].id}",
-  "access_connector_principal_id": "${module.access_connectors[\"ac-databricks-dev\"].principal_id}",
-  "comment": "Storage account with dynamic access connector reference. The access_connector_principal_id enables automatic role assignment (Blob Data Contributor). Replace 'ac-databricks-dev' with your access connector key and 'my-workspace' with your workspace key.",
+  "access_connector_key": "ac-databricks-dev",
+  "_related_resources": {
+    "private_endpoints": ["stdatabricksdev001-dfs-pe", "stdatabricksdev001-blob-pe"],
+    "dns_zones": ["storage-dfs-dns", "storage-blob-dns"],
+    "comment": "Create these resources in resources/azure/private_endpoints/ and resources/azure/private_dns_zones/"
+  },
   "tags": {
     "environment": "dev",
     "project": "databricks",
     "purpose": "unity-catalog"
   }
 }
-

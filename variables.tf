@@ -80,6 +80,18 @@ variable "vnets" {
   default     = {}
 }
 
+variable "private_dns_zones" {
+  type        = map(any)
+  description = "Map of Private DNS Zone configurations"
+  default     = {}
+}
+
+variable "private_endpoints" {
+  type        = map(any)
+  description = "Map of Private Endpoint configurations"
+  default     = {}
+}
+
 variable "access_connectors" {
   type        = map(any)
   description = "Map of Databricks Access Connector configurations"

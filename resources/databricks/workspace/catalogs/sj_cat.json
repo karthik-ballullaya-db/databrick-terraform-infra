@@ -2,11 +2,9 @@
   "enabled": true,
   "name": "sj_cat",
   "storage_root": "abfss://metastore@sjstorageacc.dfs.core.windows.net/",
-  "comment": "Unity Catalog for development environment. Requires storage account and access connector to be created first.",
+  "comment": "Unity Catalog for development environment. workspace_keys references resources/azure/workspaces/<key>.json",
   "isolation_mode": "ISOLATED",
-  "workspace_ids": [
-    "${module.workspaces[\"sjwstest2\"].workspace_id}"
-  ],
+  "workspace_keys": ["sjwstest2"],
   "binding_type": "BINDING_TYPE_READ_WRITE",
   "force_destroy": false,
   "properties": {

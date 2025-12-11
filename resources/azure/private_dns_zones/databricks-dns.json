@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "privatelink.azuredatabricks.net",
+  "resource_group_name": "testTerraform",
+  "vnet_links": [
+    {
+      "name": "link-sjvnet",
+      "vnet_key": "sjvnet",
+      "registration_enabled": false,
+      "comment": "Link to Databricks VNet - vnet_key references resources/azure/vnets/sjvnet.json"
+    }
+  ],
+  "tags": {
+    "environment": "prod",
+    "project": "analytics",
+    "purpose": "databricks-private-link",
+    "managed_by": "terraform"
+  }
+}
+

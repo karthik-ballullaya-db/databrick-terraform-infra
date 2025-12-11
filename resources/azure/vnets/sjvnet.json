@@ -1,0 +1,62 @@
+{
+  "enabled": true,
+  "name": "sjvnet",
+  "resource_group_name": "testTerraform",
+  "location": "eastus",
+  "address_space": ["10.100.0.0/16"],
+  "subnets": [
+    {
+      "name": "snet-databricks-public",
+      "address_prefixes": ["10.100.0.0/18"],
+      "delegation": "Microsoft.Databricks/workspaces",
+      "comment": "Public subnet for Databricks with delegation"
+    },
+    {
+      "name": "snet-databricks-private",
+      "address_prefixes": ["10.100.64.0/18"],
+      "delegation": "Microsoft.Databricks/workspaces",
+      "comment": "Private subnet for Databricks with delegation"
+    },
+    {
+      "name": "snet-private-endpoint-pe-workspace",
+      "address_prefixes": ["10.100.128.0/22"],
+      "private_endpoint_network_policies": "Disabled",
+      "service_endpoints": [
+        "Microsoft.Storage",
+        "Microsoft.Sql",
+        "Microsoft.EventHub"
+      ],
+      "comment": "Subnet for all private endpoints with 1024 IPs"
+    },
+    {
+      "name": "snet-private-endpoint-pe-browser",
+      "address_prefixes": ["10.100.132.0/22"],
+      "private_endpoint_network_policies": "Disabled",
+      "comment": "Subnet for browser authentication private endpoint with 1024 IPs"
+    }
+  ],
+  "network_security_groups": {
+    "nsg-databricks": {
+      "name": "nsg-databricks",
+      "security_rules": [],
+      "comment": "NSG for Databricks subnets - rules managed by Databricks"
+    }
+  },
+  "nsg_associations": {
+    "databricks-public-nsg": {
+      "subnet_name": "snet-databricks-public",
+      "nsg_name": "nsg-databricks"
+    },
+    "databricks-private-nsg": {
+      "subnet_name": "snet-databricks-private",
+      "nsg_name": "nsg-databricks"
+    }
+  },
+  "tags": {
+    "environment": "prod",
+    "project": "analytics",
+    "managed_by": "terraform",
+    "purpose": "databricks-vnet-injection"
+  }
+}
+

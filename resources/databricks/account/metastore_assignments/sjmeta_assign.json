@@ -1,7 +1,6 @@
 {
   "enabled": true,
-  "workspace_id": "${module.workspaces[\"sjwstest2\"].workspace_id}",
-  "metastore_id": "${module.metastores[\"sjmeta\"].metastore_id}",
-  "comment": "Assigns the Unity Catalog metastore to the workspace."
+  "workspace_key": "sjwstest2",
+  "metastore_key": "sjmeta",
+  "comment": "Assigns the Unity Catalog metastore to the workspace using key references. workspace_key -> resources/azure/workspaces/<key>.json, metastore_key -> resources/databricks/account/metastores/<key>.json"
 }
-

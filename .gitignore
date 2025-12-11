@@ -3,3 +3,14 @@
 .gitignore
 terraform.tfvars
 *.md
+app/
+.cursor/
+.playwright-mcp/
+.DS_Store
+hubspoke/
+chatsummary/
+.terraform.lock.hcl
+docs/
+workflows/
+testSc.py
+tfplan*

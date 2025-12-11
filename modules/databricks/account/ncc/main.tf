@@ -18,4 +18,3 @@ resource "databricks_mws_ncc_binding" "this" {
 
   depends_on = [databricks_mws_network_connectivity_config.this]
 }
-

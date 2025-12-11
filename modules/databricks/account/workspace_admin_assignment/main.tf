@@ -21,4 +21,3 @@ resource "databricks_mws_permission_assignment" "sp_admin" {
   principal_id = data.databricks_service_principal.this[each.value].id
   permissions  = ["ADMIN"]
 }
-

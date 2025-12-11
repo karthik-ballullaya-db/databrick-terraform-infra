@@ -1,0 +1,26 @@
+{
+  "enabled": true,
+  "name": "privatelink.azuredatabricks.net",
+  "resource_group_name": "rg-dns-hub",
+  "vnet_links": [
+    {
+      "name": "link-hub-vnet",
+      "vnet_key": "hub-vnet",
+      "registration_enabled": false,
+      "comment": "Link to hub VNet - use vnet_key to reference VNets by their JSON filename (without .json)"
+    },
+    {
+      "name": "link-spoke-vnet-1",
+      "vnet_key": "spoke-vnet-1",
+      "registration_enabled": false,
+      "comment": "Link to spoke VNet 1"
+    }
+  ],
+  "comment": "Private DNS zone for Databricks. Both workspace (databricks_ui_api) and browser (browser_authentication) private endpoints use this same zone. VNets are referenced by key (JSON filename without extension).",
+  "tags": {
+    "environment": "prod",
+    "purpose": "databricks-private-link",
+    "managed_by": "terraform"
+  }
+}
+

@@ -2,14 +2,12 @@
   "enabled": true,
   "name": "sjstorage",
   "azure_managed_identity": {
-    "access_connector_id": "${module.access_connectors[\"sjaccesscon\"].id}"
+    "access_connector_key": "sjaccesscon"
   },
   "isolation_mode": "ISOLATION_MODE_ISOLATED",
-  "workspace_ids": [
-    "${module.workspaces[\"sjwstest2\"].workspace_id}"
-  ],
+  "workspace_keys": ["sjwstest2"],
   "binding_type": "BINDING_TYPE_READ_WRITE",
-  "comment": "Storage credential using dynamic access connector reference and workspace binding. The access_connector_id and workspace_ids will be automatically resolved.",
+  "comment": "Storage credential using key references. access_connector_key -> resources/azure/access_connectors/<key>.json, workspace_keys -> resources/azure/workspaces/<key>.json",
   "owner": "shubham.j@databricks.com",
   "read_only": false,
   "force_destroy": false,

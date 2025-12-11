@@ -4,7 +4,7 @@
   "filter": {
     "workspace_id": {
       "operator": "IN",
-      "values": ["${module.workspaces[\"sjwstest2\"].workspace_id}"]
+      "workspace_keys": ["sjwstest2"]
     },
     "tags": [
       {
@@ -27,5 +27,6 @@
         "target": "shubham.j@databricks.com"
       }
     }
-  ]
+  ],
+  "comment": "Budget policy using key references. workspace_keys references resources/azure/workspaces/<key>.json"
 }

@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "my-workspace-pe",
+  "resource_group_name": "rg-databricks-dev",
+  "location": "eastus",
+  "vnet_key": "my-vnet",
+  "subnet_name": "snet-private-endpoints",
+  "workspace_key": "my-workspace",
+  "subresource_names": ["databricks_ui_api"],
+  "dns_zone_key": "databricks-dns",
+  "comment": "Example: Private endpoint for Databricks workspace. Key references: vnet_key -> resources/azure/vnets/<key>.json, workspace_key -> resources/azure/workspaces/<key>.json, dns_zone_key -> resources/azure/private_dns_zones/<key>.json",
+  "tags": {
+    "environment": "dev",
+    "managed_by": "terraform"
+  }
+}
+

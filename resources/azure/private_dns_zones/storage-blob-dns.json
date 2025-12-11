@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "privatelink.blob.core.windows.net",
+  "resource_group_name": "testTerraform",
+  "vnet_links": [
+    {
+      "name": "link-sjvnet",
+      "vnet_key": "sjvnet",
+      "registration_enabled": false
+    }
+  ],
+  "comment": "Private DNS zone for Azure Blob Storage private endpoints",
+  "tags": {
+    "environment": "prod",
+    "purpose": "storage-blob-private-link",
+    "managed_by": "terraform"
+  }
+}
+

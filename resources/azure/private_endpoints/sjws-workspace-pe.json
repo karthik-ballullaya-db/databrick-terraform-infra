@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "sjwstest2-workspace-pe",
+  "resource_group_name": "testTerraform",
+  "location": "eastus",
+  "vnet_key": "sjvnet",
+  "subnet_name": "snet-private-endpoint-pe-workspace",
+  "workspace_key": "sjwstest2",
+  "subresource_names": ["databricks_ui_api"],
+  "dns_zone_key": "databricks-dns",
+  "comment": "Private endpoint for Databricks workspace API access. References are resolved via key lookups.",
+  "tags": {
+    "environment": "prod",
+    "project": "analytics",
+    "purpose": "databricks-workspace-pe",
+    "managed_by": "terraform"
+  }
+}
+

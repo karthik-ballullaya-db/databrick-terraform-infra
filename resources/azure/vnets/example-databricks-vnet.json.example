@@ -1,0 +1,57 @@
+{
+  "enabled": true,
+  "name": "vnet-databricks-example",
+  "resource_group_name": "rg-databricks-dev",
+  "location": "eastus",
+  "address_space": ["10.200.0.0/16"],
+  "subnets": [
+    {
+      "name": "snet-databricks-public",
+      "address_prefixes": ["10.200.0.0/18"],
+      "delegation": "Microsoft.Databricks/workspaces",
+      "comment": "Public subnet for Databricks - use delegation shorthand for Databricks"
+    },
+    {
+      "name": "snet-databricks-private",
+      "address_prefixes": ["10.200.64.0/18"],
+      "delegation": "Microsoft.Databricks/workspaces",
+      "comment": "Private subnet for Databricks - use delegation shorthand for Databricks"
+    },
+    {
+      "name": "snet-workspace-private-endpoints",
+      "address_prefixes": ["10.200.128.0/24"],
+      "private_endpoint_network_policies": "Disabled",
+      "service_endpoints": ["Microsoft.Storage"],
+      "comment": "Subnet for workspace private endpoints"
+    },
+    {
+      "name": "snet-storage-private-endpoints",
+      "address_prefixes": ["10.200.129.0/24"],
+      "private_endpoint_network_policies": "Disabled",
+      "comment": "Subnet for storage private endpoints"
+    }
+  ],
+  "network_security_groups": {
+    "nsg-databricks": {
+      "name": "nsg-databricks",
+      "security_rules": [],
+      "comment": "Empty NSG for Databricks - rules are managed by Azure Databricks service"
+    }
+  },
+  "nsg_associations": {
+    "public-nsg": {
+      "subnet_name": "snet-databricks-public",
+      "nsg_name": "nsg-databricks"
+    },
+    "private-nsg": {
+      "subnet_name": "snet-databricks-private",
+      "nsg_name": "nsg-databricks"
+    }
+  },
+  "tags": {
+    "environment": "dev",
+    "project": "databricks",
+    "managed_by": "terraform"
+  }
+}
+

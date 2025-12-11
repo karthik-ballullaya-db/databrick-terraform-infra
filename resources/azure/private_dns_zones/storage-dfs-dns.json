@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "privatelink.dfs.core.windows.net",
+  "resource_group_name": "testTerraform",
+  "vnet_links": [
+    {
+      "name": "link-sjvnet",
+      "vnet_key": "sjvnet",
+      "registration_enabled": false
+    }
+  ],
+  "comment": "Private DNS zone for Azure Data Lake Storage (ADLS Gen2) private endpoints",
+  "tags": {
+    "environment": "prod",
+    "purpose": "storage-dfs-private-link",
+    "managed_by": "terraform"
+  }
+}
+

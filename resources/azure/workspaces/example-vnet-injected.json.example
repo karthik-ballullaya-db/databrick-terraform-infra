@@ -1,0 +1,27 @@
+{
+  "enabled": true,
+  "workspace_name": "my-private-workspace",
+  "resource_group_name": "rg-databricks-prod",
+  "location": "eastus",
+  "sku": "premium",
+  "managed_resource_group_name": "my-private-workspace-managed-rg",
+  "network_type": "vnet_injected",
+  "vnet_key": "my-databricks-vnet",
+  "public_subnet_name": "snet-databricks-public",
+  "private_subnet_name": "snet-databricks-private",
+  "nsg_association_public": "public-nsg",
+  "nsg_association_private": "private-nsg",
+  "no_public_ip": true,
+  "public_network_access_enabled": false,
+  "network_security_group_rules_required": "NoAzureDatabricksRules",
+  "_related_resources": {
+    "private_endpoints": ["my-workspace-pe", "my-workspace-browser-pe"],
+    "dns_zones": ["databricks-dns"],
+    "comment": "These keys reference related resources in resources/azure/private_endpoints/ and resources/azure/private_dns_zones/. For documentation only - doesn't affect Terraform."
+  },
+  "tags": {
+    "environment": "prod",
+    "network_type": "vnet_injected",
+    "managed_by": "terraform"
+  }
+}

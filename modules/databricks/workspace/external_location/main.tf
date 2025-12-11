@@ -20,7 +20,7 @@ resource "databricks_external_location" "this" {
         for_each = try(encryption_details.value.sse_encryption_details, null) != null ? [encryption_details.value.sse_encryption_details] : []
 
         content {
-          algorithm    = try(sse_encryption_details.value.algorithm, null)
+          algorithm       = try(sse_encryption_details.value.algorithm, null)
           aws_kms_key_arn = try(sse_encryption_details.value.aws_kms_key_arn, null)
         }
       }
@@ -64,4 +64,3 @@ resource "databricks_grants" "this" {
 
   depends_on = [databricks_external_location.this, databricks_workspace_binding.this]
 }
-

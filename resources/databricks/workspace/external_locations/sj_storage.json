@@ -4,11 +4,9 @@
   "url": "abfss://metastore@sjstorageacc.dfs.core.windows.net/",
   "credential_name": "sjstorage",
   "isolation_mode": "ISOLATION_MODE_ISOLATED",
-  "workspace_ids": [
-    "${module.workspaces[\"sjwstest2\"].workspace_id}"
-  ],
+  "workspace_keys": ["sjwstest2"],
   "binding_type": "BINDING_TYPE_READ_WRITE",
-  "comment": "External location for Unity Catalog metastore with workspace binding. workspace_ids will be automatically resolved.",
+  "comment": "External location for Unity Catalog metastore. workspace_keys references resources/azure/workspaces/<key>.json",
   "read_only": false,
   "owner": "shubham.j@databricks.com",
   "force_destroy": false,

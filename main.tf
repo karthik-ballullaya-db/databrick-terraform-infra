@@ -23,28 +23,98 @@ module "access_connectors" {
   depends_on = [module.resource_groups]
 }
 
-# Storage Accounts
-module "storage_accounts" {
-  source   = "./modules/azure/storage_account"
-  for_each = local.enabled_storage_accounts
+# ============================================================================
+# Phase 2: Networking (VNets, Subnets, NSGs)
+# ============================================================================
 
-  config     = each.value
-  depends_on = [module.access_connectors, module.resource_groups]
-}
-
-# Key Vaults
-module "key_vaults" {
-  source   = "./modules/azure/key_vault"
-  for_each = local.enabled_key_vaults
+# VNets (Standalone - used by workspaces, storage accounts, etc.)
+module "vnets" {
+  source   = "./modules/azure/vnet"
+  for_each = local.enabled_vnets
 
   config     = each.value
   depends_on = [module.resource_groups]
 }
 
-# VNets (Standalone - not part of workspace)
-module "vnets" {
-  source   = "./modules/azure/vnet"
-  for_each = local.enabled_vnets
+# ============================================================================
+# Phase 3: Private DNS Zones
+# ============================================================================
+
+# Private DNS Zones (for Private Link connectivity)
+module "private_dns_zones" {
+  source   = "./modules/azure/private_dns_zone"
+  for_each = local.enabled_private_dns_zones
+
+  config     = each.value
+  depends_on = [module.vnets]
+}
+
+# ============================================================================
+# Phase 4: Databricks Workspaces
+# ============================================================================
+
+# Databricks Workspaces (supports both public and VNet-injected)
+module "workspaces" {
+  source   = "./modules/azure/databricks_workspace"
+  for_each = local.enabled_workspaces
+
+  config     = each.value
+  depends_on = [module.resource_groups, module.vnets]
+}
+
+# ============================================================================
+# Phase 5: Storage Accounts
+# ============================================================================
+
+# Storage Accounts (before private endpoints since PEs reference them)
+module "storage_accounts" {
+  source   = "./modules/azure/storage_account"
+  for_each = local.enabled_storage_accounts
+
+  config     = each.value
+  depends_on = [module.access_connectors, module.resource_groups, module.vnets]
+}
+
+# ============================================================================
+# Phase 6: Private Endpoints (for Databricks, Storage, and other services)
+# ============================================================================
+
+# Private Endpoints - Primary (no PE dependencies)
+# These are created first and can run in parallel
+module "private_endpoints" {
+  source   = "./modules/azure/private_endpoint"
+  for_each = local.enabled_private_endpoints_primary
+
+  config = each.value
+  depends_on = [
+    module.vnets,
+    module.private_dns_zones,
+    module.workspaces,
+    module.storage_accounts
+  ]
+}
+
+# Private Endpoints - Dependent (must wait for primary PEs)
+# These have depends_on_pe_key set and are created sequentially after primary PEs
+# This prevents Azure ConcurrentUpdateError when multiple PEs target the same resource
+module "private_endpoints_dependent" {
+  source   = "./modules/azure/private_endpoint"
+  for_each = local.enabled_private_endpoints_dependent
+
+  config = each.value
+  depends_on = [
+    module.private_endpoints  # Wait for all primary PEs to complete
+  ]
+}
+
+# ============================================================================
+# Phase 7: Other Azure Resources
+# ============================================================================
+
+# Key Vaults
+module "key_vaults" {
+  source   = "./modules/azure/key_vault"
+  for_each = local.enabled_key_vaults
 
   config     = each.value
   depends_on = [module.resource_groups]
@@ -69,19 +139,7 @@ module "vms" {
 }
 
 # ============================================================================
-# Phase 2: Databricks Workspaces (VNet-Injected with Private Endpoints)
-# ============================================================================
-
-module "workspaces" {
-  source   = "./modules/azure/workspace_vnet_injected"
-  for_each = local.enabled_workspaces
-
-  config     = each.value
-  depends_on = [module.resource_groups]
-}
-
-# ============================================================================
-# Phase 3: Databricks Account-Level Resources
+# Phase 8: Databricks Account-Level Resources
 # ============================================================================
 
 # Metastores (Unity Catalog)
@@ -168,7 +226,7 @@ module "service_principals" {
 }
 
 # ============================================================================
-# Phase 3.5: Workspace Admin Assignment
+# Phase 9: Workspace Admin Assignment
 # ============================================================================
 # Automatically adds account-level service principals as workspace admins
 # This runs after workspace creation and account SP setup, before workspace resources
@@ -177,7 +235,7 @@ module "service_principals" {
 # Note: Only runs if workspace is configured (host and resource_id are set)
 
 module "workspace_admin_assignments" {
-  source = "./modules/databricks/account/workspace_admin_assignment"
+  source   = "./modules/databricks/account/workspace_admin_assignment"
   for_each = local.enabled_workspace_admin_assignments
 
   config = each.value
@@ -192,7 +250,7 @@ module "workspace_admin_assignments" {
 }
 
 # ============================================================================
-# Phase 4: Databricks Workspace-Level Resources (Unity Catalog Setup)
+# Phase 10: Databricks Workspace-Level Resources (Unity Catalog Setup)
 # ============================================================================
 
 # Storage Credentials
@@ -253,7 +311,7 @@ module "schemas" {
 }
 
 # ============================================================================
-# Phase 5: Databricks Compute Resources
+# Phase 11: Databricks Compute Resources
 # ============================================================================
 
 # Cluster Policies
@@ -299,7 +357,7 @@ module "sql_warehouses" {
 }
 
 # ============================================================================
-# Phase 6: Databricks Workspace Organization & Observability
+# Phase 12: Databricks Workspace Organization & Observability
 # ============================================================================
 
 # Workspace Folders
@@ -358,4 +416,3 @@ module "workspace_permissions" {
     databricks = databricks.workspace
   }
 }
-

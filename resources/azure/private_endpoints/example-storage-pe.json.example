@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "my-storage-dfs-pe",
+  "resource_group_name": "rg-storage-dev",
+  "location": "eastus",
+  "vnet_key": "my-vnet",
+  "subnet_name": "snet-private-endpoints",
+  "storage_account_key": "my-storage-account",
+  "subresource_names": ["dfs"],
+  "dns_zone_key": "storage-dfs-dns",
+  "comment": "Example: Private endpoint for ADLS Gen2 storage. For blob storage, use subresource_names: ['blob'] and appropriate DNS zone.",
+  "tags": {
+    "environment": "dev",
+    "managed_by": "terraform"
+  }
+}
+

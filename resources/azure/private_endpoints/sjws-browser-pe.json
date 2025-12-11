@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "sjwstest2-browser-pe",
+  "resource_group_name": "testTerraform",
+  "location": "eastus",
+  "vnet_key": "sjvnet",
+  "subnet_name": "snet-private-endpoint-pe-browser",
+  "workspace_key": "sjwstest2",
+  "subresource_names": ["browser_authentication"],
+  "dns_zone_key": "databricks-dns",
+  "depends_on_pe_key": "sjws-workspace-pe",
+  "comment": "Private endpoint for Databricks browser authentication. Must be created AFTER workspace PE due to Azure concurrent update limitation.",
+  "tags": {
+    "environment": "prod",
+    "project": "analytics",
+    "purpose": "databricks-browser-pe",
+    "managed_by": "terraform"
+  }
+}
+

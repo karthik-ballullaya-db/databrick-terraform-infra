@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "workspace_name": "my-public-workspace",
+  "resource_group_name": "rg-databricks-dev",
+  "location": "eastus",
+  "sku": "standard",
+  "network_type": "public",
+  "public_network_access_enabled": true,
+  "comment": "Example: Public workspace without VNet injection. No vnet_key needed.",
+  "tags": {
+    "environment": "dev",
+    "network_type": "public",
+    "managed_by": "terraform"
+  }
+}
+

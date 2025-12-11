@@ -48,4 +48,3 @@ resource "databricks_grants" "this" {
 
   depends_on = [databricks_catalog.this, databricks_workspace_binding.this]
 }
-

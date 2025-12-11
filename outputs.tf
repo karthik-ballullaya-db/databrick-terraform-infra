@@ -14,6 +14,55 @@ output "resource_group_ids" {
 }
 
 # ============================================================================
+# VNets
+# ============================================================================
+
+output "vnet_ids" {
+  description = "Map of VNet names to their IDs"
+  value = {
+    for k, vnet in module.vnets : k => vnet.id
+  }
+}
+
+output "vnet_subnet_ids" {
+  description = "Map of VNet names to their subnet IDs"
+  value = {
+    for k, vnet in module.vnets : k => vnet.subnet_ids
+  }
+}
+
+# ============================================================================
+# Private DNS Zones
+# ============================================================================
+
+output "private_dns_zone_ids" {
+  description = "Map of private DNS zone names to their IDs"
+  value = {
+    for k, dns in module.private_dns_zones : k => dns.id
+  }
+}
+
+# ============================================================================
+# Private Endpoints
+# ============================================================================
+
+output "private_endpoint_ids" {
+  description = "Map of private endpoint names to their IDs"
+  value = merge(
+    { for k, pe in module.private_endpoints : k => pe.id },
+    { for k, pe in module.private_endpoints_dependent : k => pe.id }
+  )
+}
+
+output "private_endpoint_ips" {
+  description = "Map of private endpoint names to their private IP addresses"
+  value = merge(
+    { for k, pe in module.private_endpoints : k => pe.private_ip_address },
+    { for k, pe in module.private_endpoints_dependent : k => pe.private_ip_address }
+  )
+}
+
+# ============================================================================
 # Databricks Workspaces
 # ============================================================================
 
@@ -34,7 +83,7 @@ output "workspace_urls" {
 output "workspace_resource_ids" {
   description = "Map of workspace names to their Azure resource IDs"
   value = {
-    for k, ws in module.workspaces : k => ws.workspace_resource_id
+    for k, ws in module.workspaces : k => ws.id
   }
 }
 

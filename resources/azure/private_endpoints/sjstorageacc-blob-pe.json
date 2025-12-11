@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "sjstorageacc-blob-pe",
+  "resource_group_name": "testTerraform",
+  "location": "eastus",
+  "vnet_key": "sjvnet",
+  "subnet_name": "snet-private-endpoint-pe-workspace",
+  "storage_account_key": "sjstorageacc",
+  "subresource_names": ["blob"],
+  "dns_zone_key": "storage-blob-dns",
+  "comment": "Private endpoint for Blob Storage. Required for Unity Catalog and general blob access.",
+  "tags": {
+    "environment": "prod",
+    "project": "databricks",
+    "purpose": "storage-blob-pe",
+    "managed_by": "terraform"
+  }
+}
+

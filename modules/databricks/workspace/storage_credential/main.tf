@@ -1,13 +1,13 @@
 resource "databricks_storage_credential" "this" {
   count = try(var.config.enabled, true) ? 1 : 0
 
-  name          = var.config.name
-  metastore_id  = try(var.config.metastore_id, null)
-  owner         = try(var.config.owner, null)
-  comment       = try(var.config.comment, null)
-  read_only     = try(var.config.read_only, false)
-  force_destroy = try(var.config.force_destroy, false)
-  force_update  = try(var.config.force_update, false)
+  name            = var.config.name
+  metastore_id    = try(var.config.metastore_id, null)
+  owner           = try(var.config.owner, null)
+  comment         = try(var.config.comment, null)
+  read_only       = try(var.config.read_only, false)
+  force_destroy   = try(var.config.force_destroy, false)
+  force_update    = try(var.config.force_update, false)
   skip_validation = try(var.config.skip_validation, false)
 
   dynamic "azure_managed_identity" {
@@ -83,4 +83,3 @@ resource "databricks_grants" "this" {
 
   depends_on = [databricks_storage_credential.this, databricks_workspace_binding.this]
 }
-

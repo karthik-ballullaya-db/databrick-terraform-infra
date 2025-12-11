@@ -1,7 +1,7 @@
 {
   "enabled": true,
-  "name": "stdatabricksdev001",
-  "resource_group_name": "rg-databricks-dev",
+  "name": "mystorageaccount",
+  "resource_group_name": "rg-storage-dev",
   "location": "eastus",
   "account_tier": "Standard",
   "account_replication_type": "LRS",
@@ -9,28 +9,26 @@
   "public_network_access_enabled": false,
   "network_rules": {
     "default_action": "Deny",
-    "bypass": ["None"],
-    "comment": "Restrict access to private endpoints only"
+    "bypass": ["AzureServices"],
+    "vnet_key": "my-vnet",
+    "subnet_names": ["snet-private-endpoints"],
+    "ip_rules": [],
+    "comment": "vnet_key and subnet_names are resolved to actual subnet IDs"
   },
   "containers": [
     {
-      "name": "metastore",
-      "container_access_type": "private"
-    },
-    {
       "name": "data",
-      "container_access_type": "private"
-    },
-    {
-      "name": "logs",
       "container_access_type": "private"
     }
   ],
-  "access_connector_id": "/subscriptions/{subscription-id}/resourceGroups/rg-databricks-dev/providers/Microsoft.Databricks/accessConnectors/ac-databricks-dev",
-  "comment": "Storage account for Unity Catalog metastore and data. Requires access connector for private link access.",
+  "access_connector_key": "my-access-connector",
+  "_related_resources": {
+    "private_endpoints": ["my-storage-dfs-pe", "my-storage-blob-pe"],
+    "dns_zones": ["storage-dfs-dns", "storage-blob-dns"],
+    "comment": "These keys reference related resources in resources/azure/private_endpoints/ and resources/azure/private_dns_zones/. For documentation only - doesn't affect Terraform."
+  },
   "tags": {
     "environment": "dev",
-    "project": "databricks",
-    "purpose": "unity-catalog"
+    "managed_by": "terraform"
   }
 }
