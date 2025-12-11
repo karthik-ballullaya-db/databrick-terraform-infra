@@ -16,7 +16,13 @@ provider "databricks" {
   account_id = var.databricks_account_id
 }
 
+# Workspace provider - dynamically resolves from module output
+# Uses the first enabled workspace as the primary workspace provider
+# For multi-workspace scenarios, add additional aliased providers as needed
 provider "databricks" {
   alias = "workspace"
-  host  = var.databricks_workspace_host
+  host = try(
+    module.workspaces[local.primary_workspace_key].workspace_url,
+    var.databricks_workspace_host != "" ? var.databricks_workspace_host : null
+  )
 }

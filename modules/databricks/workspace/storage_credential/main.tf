@@ -1,3 +1,44 @@
+# ============================================================================
+# Storage Credential Module
+# ============================================================================
+# Creates Unity Catalog Storage Credential
+# Resolves key references internally using lookup maps
+# ============================================================================
+
+locals {
+  # Check if access connector is configured (known at plan time)
+  has_access_connector = try(var.config.azure_managed_identity.access_connector_key, null) != null
+
+  # Resolve access_connector_id in azure_managed_identity from access_connector_key if provided
+  azure_managed_identity = try(var.config.azure_managed_identity, null) != null ? merge(var.config.azure_managed_identity, {
+    access_connector_id = try(var.config.azure_managed_identity.access_connector_key, null) != null ? (
+      var.access_connectors_map[var.config.azure_managed_identity.access_connector_key].id
+    ) : try(var.config.azure_managed_identity.access_connector_id, null)
+  }) : null
+
+  # Check if workspace binding is configured (known at plan time)
+  has_workspace_binding = (
+    try(var.config.workspace_keys, null) != null ||
+    try(var.config.workspace_ids, null) != null
+  )
+
+  # Get the list of keys to use for for_each (known at plan time)
+  workspace_binding_keys = try(var.config.workspace_keys, null) != null ? (
+    var.config.workspace_keys
+  ) : try(var.config.workspace_ids, null) != null ? (
+    [for id in var.config.workspace_ids : tostring(id)]
+  ) : []
+
+  # Resolve workspace_ids from workspace_keys (for actual resource values)
+  workspace_ids_map = try(var.config.workspace_keys, null) != null ? {
+    for ws_key in var.config.workspace_keys :
+    ws_key => var.workspaces_map[ws_key].workspace_id
+  } : try(var.config.workspace_ids, null) != null ? {
+    for ws_id in var.config.workspace_ids :
+    tostring(ws_id) => ws_id
+  } : {}
+}
+
 resource "databricks_storage_credential" "this" {
   count = try(var.config.enabled, true) ? 1 : 0
 
@@ -11,7 +52,7 @@ resource "databricks_storage_credential" "this" {
   skip_validation = try(var.config.skip_validation, false)
 
   dynamic "azure_managed_identity" {
-    for_each = try(var.config.azure_managed_identity, null) != null ? [var.config.azure_managed_identity] : []
+    for_each = local.azure_managed_identity != null ? [local.azure_managed_identity] : []
 
     content {
       access_connector_id = azure_managed_identity.value.access_connector_id
@@ -48,14 +89,13 @@ resource "databricks_storage_credential" "this" {
 }
 
 # Workspace Bindings - Bind storage credential to specific workspace(s)
+# Note: for_each uses workspace_binding_keys (known at plan time)
 resource "databricks_workspace_binding" "this" {
-  for_each = try(var.config.enabled, true) && try(var.config.workspace_ids, null) != null ? {
-    for ws_id in var.config.workspace_ids : tostring(ws_id) => ws_id
-  } : {}
+  for_each = try(var.config.enabled, true) && local.has_workspace_binding ? toset(local.workspace_binding_keys) : toset([])
 
   securable_name = databricks_storage_credential.this[0].name
   securable_type = "storage_credential"
-  workspace_id   = each.value
+  workspace_id   = local.workspace_ids_map[each.key]
   binding_type   = try(var.config.binding_type, "BINDING_TYPE_READ_WRITE")
 
   depends_on = [databricks_storage_credential.this]

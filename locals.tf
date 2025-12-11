@@ -1,9 +1,18 @@
 locals {
   # ============================================================================
+  # Primary Workspace Key (for provider configuration)
+  # ============================================================================
+  # The first enabled workspace is used as the primary workspace for the
+  # databricks.workspace provider. For multi-workspace scenarios, add
+  # additional providers with explicit aliases.
+
+  primary_workspace_key = try(keys(local.enabled_workspaces)[0], null)
+
+  # ============================================================================
   # Phase 1: Azure Foundation Resources (No Dependencies)
   # ============================================================================
 
-  # Resource Groups
+  # Resource Groups - Raw JSON parsing only
   resource_groups = {
     for f in try(fileset("${path.module}/resources/azure/resource_groups", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/resource_groups/${f}"))
@@ -14,7 +23,7 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # Access Connectors
+  # Access Connectors - Raw JSON parsing only
   access_connectors = {
     for f in try(fileset("${path.module}/resources/azure/access_connectors", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/access_connectors/${f}"))
@@ -29,11 +38,12 @@ locals {
   # Phase 2: VNets (Depends on Resource Groups)
   # ============================================================================
 
-  vnets_raw = {
+  # VNets - Raw JSON parsing only (NO module references)
+  vnets = {
     for f in try(fileset("${path.module}/resources/azure/vnets", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/vnets/${f}"))
   }
-  all_vnets = merge(local.vnets_raw, var.vnets)
+  all_vnets = merge(local.vnets, var.vnets)
   enabled_vnets = {
     for k, v in local.all_vnets :
     k => v if try(v.enabled, true)
@@ -43,21 +53,11 @@ locals {
   # Phase 3: Private DNS Zones (Depends on VNets)
   # ============================================================================
 
-  private_dns_zones_raw = {
+  # Private DNS Zones - Raw JSON parsing only (NO module references)
+  # vnet_key resolution happens inside the module
+  private_dns_zones = {
     for f in try(fileset("${path.module}/resources/azure/private_dns_zones", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/private_dns_zones/${f}"))
-  }
-
-  # Resolve VNet key references in DNS zone configurations
-  private_dns_zones = {
-    for k, v in local.private_dns_zones_raw : k => merge(v, {
-      vnet_links = [
-        for link in try(v.vnet_links, []) : merge(link, {
-          # Resolve vnet_key to actual vnet_id
-          vnet_id = try(link.vnet_key, null) != null ? module.vnets[link.vnet_key].id : try(link.vnet_id, null)
-        })
-      ]
-    })
   }
   all_private_dns_zones = merge(local.private_dns_zones, var.private_dns_zones)
   enabled_private_dns_zones = {
@@ -69,37 +69,11 @@ locals {
   # Phase 4: Databricks Workspaces (Depends on VNets)
   # ============================================================================
 
-  workspaces_raw = {
+  # Workspaces - Raw JSON parsing only (NO module references)
+  # vnet_key resolution happens inside the module
+  workspaces = {
     for f in try(fileset("${path.module}/resources/azure/workspaces", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/workspaces/${f}"))
-  }
-
-  # Resolve VNet key references for workspaces
-  workspaces = {
-    for k, v in local.workspaces_raw : k => merge(v, {
-      # Determine network type (default to public)
-      network_type = try(v.network_type, "public")
-
-      # VNet references - only resolve if vnet_injected
-      vnet_id = try(v.vnet_key, null) != null ? module.vnets[v.vnet_key].id : null
-
-      public_subnet_id = try(v.vnet_key, null) != null && try(v.public_subnet_name, null) != null ? (
-        module.vnets[v.vnet_key].subnet_ids[v.public_subnet_name]
-      ) : null
-
-      private_subnet_id = try(v.vnet_key, null) != null && try(v.private_subnet_name, null) != null ? (
-        module.vnets[v.vnet_key].subnet_ids[v.private_subnet_name]
-      ) : null
-
-      # NSG association IDs for VNet injection
-      public_nsg_association_id = try(v.vnet_key, null) != null && try(v.nsg_association_public, null) != null ? (
-        module.vnets[v.vnet_key].nsg_association_ids[v.nsg_association_public]
-      ) : null
-
-      private_nsg_association_id = try(v.vnet_key, null) != null && try(v.nsg_association_private, null) != null ? (
-        module.vnets[v.vnet_key].nsg_association_ids[v.nsg_association_private]
-      ) : null
-    })
   }
   all_workspaces = merge(local.workspaces, var.workspaces)
   enabled_workspaces = {
@@ -111,34 +85,11 @@ locals {
   # Phase 5: Private Endpoints (Depends on VNets, Workspaces, DNS Zones)
   # ============================================================================
 
-  private_endpoints_raw = {
+  # Private Endpoints - Raw JSON parsing only (NO module references)
+  # All key resolution happens inside the module
+  private_endpoints = {
     for f in try(fileset("${path.module}/resources/azure/private_endpoints", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/private_endpoints/${f}"))
-  }
-
-  # Resolve all key references for private endpoints
-  private_endpoints = {
-    for k, v in local.private_endpoints_raw : k => merge(v, {
-      # Resolve subnet_id from vnet_key and subnet_name
-      subnet_id = try(v.vnet_key, null) != null && try(v.subnet_name, null) != null ? (
-        module.vnets[v.vnet_key].subnet_ids[v.subnet_name]
-      ) : try(v.subnet_id, null)
-
-      # Resolve private_connection_resource_id based on resource type
-      private_connection_resource_id = coalesce(
-        # Workspace reference
-        try(v.workspace_key, null) != null ? module.workspaces[v.workspace_key].id : null,
-        # Storage account reference
-        try(v.storage_account_key, null) != null ? module.storage_accounts[v.storage_account_key].id : null,
-        # Direct ID
-        try(v.private_connection_resource_id, null)
-      )
-
-      # Resolve DNS zone IDs
-      private_dns_zone_ids = try(v.dns_zone_key, null) != null ? [
-        module.private_dns_zones[v.dns_zone_key].id
-      ] : try(v.private_dns_zone_ids, null)
-    })
   }
   all_private_endpoints = merge(local.private_endpoints, var.private_endpoints)
   enabled_private_endpoints = {
@@ -160,36 +111,13 @@ locals {
   # ============================================================================
   # Phase 6: Storage Accounts (Depends on Access Connectors, VNets)
   # ============================================================================
-  # Note: Private endpoints and DNS zones are managed separately for modularity
 
-  storage_accounts_raw = {
+  # Storage Accounts - Raw JSON parsing only (NO module references)
+  # access_connector_key and vnet_key resolution happens inside the module
+  storage_accounts = {
     for f in try(fileset("${path.module}/resources/azure/storage_accounts", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/storage_accounts/${f}"))
   }
-
-  # Resolve key references for storage accounts
-  storage_accounts = {
-    for k, v in local.storage_accounts_raw : k => merge(v, {
-      # Resolve access_connector_id from key
-      access_connector_id = try(v.access_connector_key, null) != null ? (
-        module.access_connectors[v.access_connector_key].id
-      ) : try(v.access_connector_id, null)
-
-      # Resolve access_connector_principal_id from key
-      access_connector_principal_id = try(v.access_connector_key, null) != null ? (
-        module.access_connectors[v.access_connector_key].principal_id
-      ) : try(v.access_connector_principal_id, null)
-
-      # Resolve network_rules.virtual_network_subnet_ids from keys
-      network_rules = try(v.network_rules, null) != null ? merge(v.network_rules, {
-        virtual_network_subnet_ids = try(v.network_rules.vnet_key, null) != null && try(v.network_rules.subnet_names, null) != null ? [
-          for subnet_name in v.network_rules.subnet_names :
-          module.vnets[v.network_rules.vnet_key].subnet_ids[subnet_name]
-        ] : try(v.network_rules.virtual_network_subnet_ids, [])
-      }) : null
-    })
-  }
-
   all_storage_accounts = merge(local.storage_accounts, var.storage_accounts)
   enabled_storage_accounts = {
     for k, v in local.all_storage_accounts :
@@ -242,7 +170,7 @@ locals {
   # Databricks Account Resources
   # ============================================================================
 
-  # Metastores
+  # Metastores - Raw JSON parsing only
   metastores = {
     for f in try(fileset("${path.module}/resources/databricks/account/metastores", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/metastores/${f}"))
@@ -253,107 +181,55 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # Metastore Assignments - Key-based resolution
-  metastore_assignments_raw = {
+  # Metastore Assignments - Raw JSON parsing only (NO module references)
+  # workspace_key and metastore_key resolution happens inside the module
+  metastore_assignments = {
     for f in try(fileset("${path.module}/resources/databricks/account/metastore_assignments", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/metastore_assignments/${f}"))
   }
-
-  metastore_assignments = {
-    for k, v in local.metastore_assignments_raw : k => merge(v, {
-      # Resolve workspace_id from workspace_key
-      workspace_id = try(v.workspace_key, null) != null ? (
-        module.workspaces[v.workspace_key].workspace_id
-      ) : try(v.workspace_id, null)
-
-      # Resolve metastore_id from metastore_key
-      metastore_id = try(v.metastore_key, null) != null ? (
-        module.metastores[v.metastore_key].metastore_id
-      ) : try(v.metastore_id, null)
-    })
-  }
-
   all_metastore_assignments = merge(local.metastore_assignments, var.metastore_assignments)
   enabled_metastore_assignments = {
     for k, v in local.all_metastore_assignments :
     k => v if try(v.enabled, true)
   }
 
-  # Budget Policies - Key-based resolution
-  budget_policies_raw = {
+  # Budget Policies - Raw JSON parsing only (NO module references)
+  # workspace_keys resolution happens inside the module
+  budget_policies = {
     for f in try(fileset("${path.module}/resources/databricks/account/budget_policies", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/budget_policies/${f}"))
   }
-
-  budget_policies = {
-    for k, v in local.budget_policies_raw : k => merge(v, {
-      # Resolve workspace_ids in filter from workspace_keys
-      filter = try(v.filter, null) != null ? merge(v.filter, {
-        workspace_id = try(v.filter.workspace_id, null) != null ? merge(v.filter.workspace_id, {
-          values = try(v.filter.workspace_id.workspace_keys, null) != null ? [
-            for ws_key in v.filter.workspace_id.workspace_keys :
-            module.workspaces[ws_key].workspace_id
-          ] : try(v.filter.workspace_id.values, [])
-        }) : null
-      }) : null
-    })
-  }
-
   all_budget_policies = merge(local.budget_policies, var.budget_policies)
   enabled_budget_policies = {
     for k, v in local.all_budget_policies :
     k => v if try(v.enabled, true)
   }
 
-  # NCC (Network Connectivity Configs) - Key-based resolution
-  ncc_configs_raw = {
+  # NCC (Network Connectivity Configs) - Raw JSON parsing only (NO module references)
+  # workspace_keys resolution happens inside the module
+  ncc_configs = {
     for f in try(fileset("${path.module}/resources/databricks/account/ncc", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/ncc/${f}"))
   }
-
-  ncc_configs = {
-    for k, v in local.ncc_configs_raw : k => merge(v, {
-      # Resolve workspace_ids from workspace_keys
-      workspace_ids = try(v.workspace_keys, null) != null ? [
-        for ws_key in v.workspace_keys :
-        module.workspaces[ws_key].workspace_id
-      ] : try(v.workspace_ids, null)
-    })
-  }
-
   all_ncc_configs = merge(local.ncc_configs, var.ncc_configs)
   enabled_ncc_configs = {
     for k, v in local.all_ncc_configs :
     k => v if try(v.enabled, true)
   }
 
-  # NCC Private Endpoints - Key-based resolution
-  ncc_private_endpoints_raw = {
+  # NCC Private Endpoints - Raw JSON parsing only (NO module references)
+  # ncc_key and storage_account_key resolution happens inside the module
+  ncc_private_endpoints = {
     for f in try(fileset("${path.module}/resources/databricks/account/ncc_private_endpoints", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/ncc_private_endpoints/${f}"))
   }
-
-  ncc_private_endpoints = {
-    for k, v in local.ncc_private_endpoints_raw : k => merge(v, {
-      # Resolve network_connectivity_config_id from ncc_key
-      network_connectivity_config_id = try(v.ncc_key, null) != null ? (
-        module.ncc_configs[v.ncc_key].network_connectivity_config_id
-      ) : try(v.network_connectivity_config_id, null)
-
-      # Resolve resource_id from storage_account_key
-      resource_id = try(v.storage_account_key, null) != null ? (
-        module.storage_accounts[v.storage_account_key].id
-      ) : try(v.resource_id, null)
-    })
-  }
-
   all_ncc_private_endpoints = merge(local.ncc_private_endpoints, var.ncc_private_endpoints)
   enabled_ncc_private_endpoints = {
     for k, v in local.all_ncc_private_endpoints :
     k => v if try(v.enabled, true)
   }
 
-  # Service Principals
+  # Service Principals - Raw JSON parsing only
   service_principals = {
     for f in try(fileset("${path.module}/resources/databricks/account/service_principals", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/service_principals/${f}"))
@@ -364,21 +240,12 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # Workspace Admin Assignments - Key-based resolution
-  workspace_admin_assignments_raw = {
+  # Workspace Admin Assignments - Raw JSON parsing only (NO module references)
+  # workspace_key resolution happens inside the module
+  workspace_admin_assignments = {
     for f in try(fileset("${path.module}/resources/databricks/account/workspace_admin_assignments", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/workspace_admin_assignments/${f}"))
   }
-
-  workspace_admin_assignments = {
-    for k, v in local.workspace_admin_assignments_raw : k => merge(v, {
-      # Resolve workspace_id from workspace_key
-      workspace_id = try(v.workspace_key, null) != null ? (
-        module.workspaces[v.workspace_key].workspace_id
-      ) : try(v.workspace_id, null)
-    })
-  }
-
   all_workspace_admin_assignments = merge(local.workspace_admin_assignments, var.workspace_admin_assignments)
   enabled_workspace_admin_assignments = {
     for k, v in local.all_workspace_admin_assignments :
@@ -389,80 +256,43 @@ locals {
   # Databricks Workspace Resources
   # ============================================================================
 
-  # Storage Credentials - Key-based resolution
-  storage_credentials_raw = {
+  # Storage Credentials - Raw JSON parsing only (NO module references)
+  # access_connector_key and workspace_keys resolution happens inside the module
+  storage_credentials = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/storage_credentials", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/storage_credentials/${f}"))
   }
-
-  storage_credentials = {
-    for k, v in local.storage_credentials_raw : k => merge(v, {
-      # Resolve access_connector_id in azure_managed_identity from key
-      azure_managed_identity = try(v.azure_managed_identity, null) != null ? merge(v.azure_managed_identity, {
-        access_connector_id = try(v.azure_managed_identity.access_connector_key, null) != null ? (
-          module.access_connectors[v.azure_managed_identity.access_connector_key].id
-        ) : try(v.azure_managed_identity.access_connector_id, null)
-      }) : null
-
-      # Resolve workspace_ids from workspace_keys
-      workspace_ids = try(v.workspace_keys, null) != null ? [
-        for ws_key in v.workspace_keys :
-        module.workspaces[ws_key].workspace_id
-      ] : try(v.workspace_ids, null)
-    })
-  }
-
   all_storage_credentials = merge(local.storage_credentials, var.storage_credentials)
   enabled_storage_credentials = {
     for k, v in local.all_storage_credentials :
     k => v if try(v.enabled, true)
   }
 
-  # External Locations - Key-based resolution
-  external_locations_raw = {
+  # External Locations - Raw JSON parsing only (NO module references)
+  # workspace_keys resolution happens inside the module
+  external_locations = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/external_locations", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/external_locations/${f}"))
   }
-
-  external_locations = {
-    for k, v in local.external_locations_raw : k => merge(v, {
-      # Resolve workspace_ids from workspace_keys
-      workspace_ids = try(v.workspace_keys, null) != null ? [
-        for ws_key in v.workspace_keys :
-        module.workspaces[ws_key].workspace_id
-      ] : try(v.workspace_ids, null)
-    })
-  }
-
   all_external_locations = merge(local.external_locations, var.external_locations)
   enabled_external_locations = {
     for k, v in local.all_external_locations :
     k => v if try(v.enabled, true)
   }
 
-  # Catalogs - Key-based resolution
-  catalogs_raw = {
+  # Catalogs - Raw JSON parsing only (NO module references)
+  # workspace_keys resolution happens inside the module
+  catalogs = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/catalogs", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/catalogs/${f}"))
   }
-
-  catalogs = {
-    for k, v in local.catalogs_raw : k => merge(v, {
-      # Resolve workspace_ids from workspace_keys
-      workspace_ids = try(v.workspace_keys, null) != null ? [
-        for ws_key in v.workspace_keys :
-        module.workspaces[ws_key].workspace_id
-      ] : try(v.workspace_ids, null)
-    })
-  }
-
   all_catalogs = merge(local.catalogs, var.catalogs)
   enabled_catalogs = {
     for k, v in local.all_catalogs :
     k => v if try(v.enabled, true)
   }
 
-  # Schemas
+  # Schemas - Raw JSON parsing only
   schemas = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/schemas", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/schemas/${f}"))
@@ -473,7 +303,7 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # Clusters
+  # Clusters - Raw JSON parsing only
   clusters = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/clusters", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/clusters/${f}"))
@@ -484,7 +314,7 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # Cluster Policies
+  # Cluster Policies - Raw JSON parsing only
   cluster_policies = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/cluster_policies", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/cluster_policies/${f}"))
@@ -495,7 +325,7 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # SQL Warehouses
+  # SQL Warehouses - Raw JSON parsing only
   sql_warehouses = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/sql_warehouses", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/sql_warehouses/${f}"))
@@ -506,7 +336,7 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # Workspace Folders
+  # Workspace Folders - Raw JSON parsing only
   workspace_folders = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/workspace_folders", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/workspace_folders/${f}"))
@@ -517,7 +347,7 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # Queries
+  # Queries - Raw JSON parsing only
   queries = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/queries", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/queries/${f}"))
@@ -528,7 +358,7 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # Alerts
+  # Alerts - Raw JSON parsing only
   alerts = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/alerts", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/alerts/${f}"))
@@ -539,7 +369,7 @@ locals {
     k => v if try(v.enabled, true)
   }
 
-  # Workspace Permissions
+  # Workspace Permissions - Raw JSON parsing only
   workspace_permissions = {
     for f in try(fileset("${path.module}/resources/databricks/workspace/workspace_permissions", "*.json"), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/workspace_permissions/${f}"))

@@ -1,3 +1,22 @@
+# ============================================================================
+# Budget Policy Module
+# ============================================================================
+# Creates Databricks Budget Policy for cost management
+# Resolves workspace_keys references internally using workspaces_map
+# ============================================================================
+
+locals {
+  # Resolve workspace_ids from workspace_keys in filter if provided
+  filter = try(var.config.filter, null) != null ? merge(var.config.filter, {
+    workspace_id = try(var.config.filter.workspace_id, null) != null ? merge(var.config.filter.workspace_id, {
+      values = try(var.config.filter.workspace_id.workspace_keys, null) != null ? [
+        for ws_key in var.config.filter.workspace_id.workspace_keys :
+        var.workspaces_map[ws_key].workspace_id
+      ] : try(var.config.filter.workspace_id.values, [])
+    }) : null
+  }) : null
+}
+
 resource "databricks_budget" "this" {
   count = try(var.config.enabled, true) ? 1 : 0
 
@@ -5,7 +24,7 @@ resource "databricks_budget" "this" {
   display_name            = var.config.display_name
 
   dynamic "filter" {
-    for_each = try(var.config.filter, null) != null ? [var.config.filter] : []
+    for_each = local.filter != null ? [local.filter] : []
 
     content {
       dynamic "tags" {

@@ -1,6 +1,8 @@
 # ============================================================================
 # Main Orchestration - Resource Deployment
 # ============================================================================
+# Single-apply deployment with module map pattern for dynamic key resolution
+# ============================================================================
 
 # ============================================================================
 # Phase 1: Azure Foundation Resources
@@ -45,7 +47,11 @@ module "private_dns_zones" {
   source   = "./modules/azure/private_dns_zone"
   for_each = local.enabled_private_dns_zones
 
-  config     = each.value
+  config = each.value
+
+  # Pass lookup maps for key resolution
+  vnets_map = module.vnets
+
   depends_on = [module.vnets]
 }
 
@@ -58,7 +64,11 @@ module "workspaces" {
   source   = "./modules/azure/databricks_workspace"
   for_each = local.enabled_workspaces
 
-  config     = each.value
+  config = each.value
+
+  # Pass lookup maps for key resolution
+  vnets_map = module.vnets
+
   depends_on = [module.resource_groups, module.vnets]
 }
 
@@ -71,7 +81,12 @@ module "storage_accounts" {
   source   = "./modules/azure/storage_account"
   for_each = local.enabled_storage_accounts
 
-  config     = each.value
+  config = each.value
+
+  # Pass lookup maps for key resolution
+  access_connectors_map = module.access_connectors
+  vnets_map             = module.vnets
+
   depends_on = [module.access_connectors, module.resource_groups, module.vnets]
 }
 
@@ -86,6 +101,13 @@ module "private_endpoints" {
   for_each = local.enabled_private_endpoints_primary
 
   config = each.value
+
+  # Pass lookup maps for key resolution
+  vnets_map             = module.vnets
+  workspaces_map        = module.workspaces
+  storage_accounts_map  = module.storage_accounts
+  private_dns_zones_map = module.private_dns_zones
+
   depends_on = [
     module.vnets,
     module.private_dns_zones,
@@ -102,8 +124,15 @@ module "private_endpoints_dependent" {
   for_each = local.enabled_private_endpoints_dependent
 
   config = each.value
+
+  # Pass lookup maps for key resolution
+  vnets_map             = module.vnets
+  workspaces_map        = module.workspaces
+  storage_accounts_map  = module.storage_accounts
+  private_dns_zones_map = module.private_dns_zones
+
   depends_on = [
-    module.private_endpoints  # Wait for all primary PEs to complete
+    module.private_endpoints # Wait for all primary PEs to complete
   ]
 }
 
@@ -164,6 +193,11 @@ module "metastore_assignments" {
   for_each = local.enabled_metastore_assignments
 
   config = each.value
+
+  # Pass lookup maps for key resolution
+  workspaces_map = module.workspaces
+  metastores_map = module.metastores
+
   depends_on = [
     module.metastores,
     module.workspaces
@@ -179,7 +213,11 @@ module "ncc_configs" {
   source   = "./modules/databricks/account/ncc"
   for_each = local.enabled_ncc_configs
 
-  config     = each.value
+  config = each.value
+
+  # Pass lookup maps for key resolution
+  workspaces_map = module.workspaces
+
   depends_on = [module.workspaces]
 
   providers = {
@@ -192,7 +230,12 @@ module "ncc_private_endpoints" {
   source   = "./modules/databricks/account/ncc_private_endpoint"
   for_each = local.enabled_ncc_private_endpoints
 
-  config     = each.value
+  config = each.value
+
+  # Pass lookup maps for key resolution
+  ncc_configs_map      = module.ncc_configs
+  storage_accounts_map = module.storage_accounts
+
   depends_on = [module.ncc_configs, module.storage_accounts]
 
   providers = {
@@ -206,6 +249,9 @@ module "budget_policies" {
   for_each = local.enabled_budget_policies
 
   config = each.value
+
+  # Pass lookup maps for key resolution
+  workspaces_map = module.workspaces
 
   providers = {
     databricks = databricks.account
@@ -231,14 +277,16 @@ module "service_principals" {
 # Automatically adds account-level service principals as workspace admins
 # This runs after workspace creation and account SP setup, before workspace resources
 # Key: Eliminates manual intervention for SP workspace admin access
-#
-# Note: Only runs if workspace is configured (host and resource_id are set)
 
 module "workspace_admin_assignments" {
   source   = "./modules/databricks/account/workspace_admin_assignment"
   for_each = local.enabled_workspace_admin_assignments
 
   config = each.value
+
+  # Pass lookup maps for key resolution
+  workspaces_map = module.workspaces
+
   depends_on = [
     module.workspaces,
     module.service_principals
@@ -252,13 +300,20 @@ module "workspace_admin_assignments" {
 # ============================================================================
 # Phase 10: Databricks Workspace-Level Resources (Unity Catalog Setup)
 # ============================================================================
+# Note: Workspace provider is dynamically configured using module.workspaces output
+# These resources only run when workspaces exist (guarded by length check)
 
 # Storage Credentials
 module "storage_credentials" {
   source   = "./modules/databricks/workspace/storage_credential"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_storage_credentials : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_storage_credentials : {}
 
   config = each.value
+
+  # Pass lookup maps for key resolution
+  access_connectors_map = module.access_connectors
+  workspaces_map        = module.workspaces
+
   depends_on = [
     module.metastores,
     module.metastore_assignments,
@@ -274,9 +329,13 @@ module "storage_credentials" {
 # External Locations
 module "external_locations" {
   source   = "./modules/databricks/workspace/external_location"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_external_locations : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_external_locations : {}
 
-  config     = each.value
+  config = each.value
+
+  # Pass lookup maps for key resolution
+  workspaces_map = module.workspaces
+
   depends_on = [module.storage_credentials]
 
   providers = {
@@ -287,9 +346,13 @@ module "external_locations" {
 # Catalogs
 module "catalogs" {
   source   = "./modules/databricks/workspace/catalog"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_catalogs : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_catalogs : {}
 
-  config     = each.value
+  config = each.value
+
+  # Pass lookup maps for key resolution
+  workspaces_map = module.workspaces
+
   depends_on = [module.external_locations]
 
   providers = {
@@ -300,7 +363,7 @@ module "catalogs" {
 # Schemas
 module "schemas" {
   source   = "./modules/databricks/workspace/schema"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_schemas : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_schemas : {}
 
   config     = each.value
   depends_on = [module.catalogs]
@@ -317,7 +380,7 @@ module "schemas" {
 # Cluster Policies
 module "cluster_policies" {
   source   = "./modules/databricks/workspace/cluster_policy"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_cluster_policies : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_cluster_policies : {}
 
   config     = each.value
   depends_on = [module.workspaces]
@@ -330,7 +393,7 @@ module "cluster_policies" {
 # Clusters
 module "clusters" {
   source   = "./modules/databricks/workspace/cluster"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_clusters : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_clusters : {}
 
   config = each.value
   depends_on = [
@@ -346,7 +409,7 @@ module "clusters" {
 # SQL Warehouses
 module "sql_warehouses" {
   source   = "./modules/databricks/workspace/sql_warehouse"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_sql_warehouses : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_sql_warehouses : {}
 
   config     = each.value
   depends_on = [module.workspaces]
@@ -363,7 +426,7 @@ module "sql_warehouses" {
 # Workspace Folders
 module "workspace_folders" {
   source   = "./modules/databricks/workspace/workspace_folder"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_workspace_folders : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_workspace_folders : {}
 
   config     = each.value
   depends_on = [module.workspaces]
@@ -376,7 +439,7 @@ module "workspace_folders" {
 # Queries
 module "queries" {
   source   = "./modules/databricks/workspace/query"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_queries : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_queries : {}
 
   config = each.value
   depends_on = [
@@ -392,7 +455,7 @@ module "queries" {
 # Alerts
 module "alerts" {
   source   = "./modules/databricks/workspace/alert"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_alerts : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_alerts : {}
 
   config = each.value
   depends_on = [
@@ -407,7 +470,7 @@ module "alerts" {
 # Workspace Permissions
 module "workspace_permissions" {
   source   = "./modules/databricks/workspace/workspace_permissions"
-  for_each = var.databricks_workspace_host != "" ? local.enabled_workspace_permissions : {}
+  for_each = length(module.workspaces) > 0 ? local.enabled_workspace_permissions : {}
 
   config     = each.value
   depends_on = [module.workspaces]
