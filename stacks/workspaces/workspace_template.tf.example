@@ -1,0 +1,260 @@
+# ============================================================================
+# Workspace: TEMPLATE
+# ============================================================================
+# TEMPLATE FILE - Copy this file and replace "TEMPLATE" with your workspace name
+#
+# Steps to add a new workspace:
+#   1. Copy this file: cp workspace_template.tf.example workspace_<name>.tf
+#   2. Replace all occurrences of "TEMPLATE" with your workspace name (lowercase)
+#   3. Add variable to variables.tf:
+#      variable "workspace_<name>_host" {
+#        type    = string
+#        default = ""
+#      }
+#   4. Create resources folder: mkdir -p ../../resources/workspaces/<name>/{clusters,catalogs,...}
+#   5. Add JSON configs to the resources folder
+#   6. Set workspace_<name>_host in terraform.tfvars
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Provider for this workspace
+# ----------------------------------------------------------------------------
+provider "databricks" {
+  alias = "TEMPLATE"
+  host  = var.workspace_TEMPLATE_host
+}
+
+# ----------------------------------------------------------------------------
+# Locals - Parse JSON configs for this workspace
+# ----------------------------------------------------------------------------
+locals {
+  # Workspace: TEMPLATE - Resource parsing
+  ws_TEMPLATE_storage_credentials = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/storage_credentials", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/storage_credentials/${f}"))
+  }
+  ws_TEMPLATE_enabled_storage_credentials = {
+    for k, v in local.ws_TEMPLATE_storage_credentials : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_external_locations = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/external_locations", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/external_locations/${f}"))
+  }
+  ws_TEMPLATE_enabled_external_locations = {
+    for k, v in local.ws_TEMPLATE_external_locations : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_catalogs = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/catalogs", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/catalogs/${f}"))
+  }
+  ws_TEMPLATE_enabled_catalogs = {
+    for k, v in local.ws_TEMPLATE_catalogs : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_schemas = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/schemas", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/schemas/${f}"))
+  }
+  ws_TEMPLATE_enabled_schemas = {
+    for k, v in local.ws_TEMPLATE_schemas : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_cluster_policies = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/cluster_policies", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/cluster_policies/${f}"))
+  }
+  ws_TEMPLATE_enabled_cluster_policies = {
+    for k, v in local.ws_TEMPLATE_cluster_policies : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_clusters = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/clusters", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/clusters/${f}"))
+  }
+  ws_TEMPLATE_enabled_clusters = {
+    for k, v in local.ws_TEMPLATE_clusters : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_sql_warehouses = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/sql_warehouses", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/sql_warehouses/${f}"))
+  }
+  ws_TEMPLATE_enabled_sql_warehouses = {
+    for k, v in local.ws_TEMPLATE_sql_warehouses : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_workspace_folders = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/workspace_folders", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/workspace_folders/${f}"))
+  }
+  ws_TEMPLATE_enabled_workspace_folders = {
+    for k, v in local.ws_TEMPLATE_workspace_folders : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_queries = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/queries", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/queries/${f}"))
+  }
+  ws_TEMPLATE_enabled_queries = {
+    for k, v in local.ws_TEMPLATE_queries : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_alerts = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/alerts", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/alerts/${f}"))
+  }
+  ws_TEMPLATE_enabled_alerts = {
+    for k, v in local.ws_TEMPLATE_alerts : k => v if try(v.enabled, true)
+  }
+
+  ws_TEMPLATE_workspace_permissions = {
+    for f in try(fileset("${local.workspaces_resources_path}/TEMPLATE/workspace_permissions", "*.json"), []) :
+    trimsuffix(f, ".json") => jsondecode(file("${local.workspaces_resources_path}/TEMPLATE/workspace_permissions/${f}"))
+  }
+  ws_TEMPLATE_enabled_workspace_permissions = {
+    for k, v in local.ws_TEMPLATE_workspace_permissions : k => v if try(v.enabled, true)
+  }
+}
+
+# ----------------------------------------------------------------------------
+# Modules - All use databricks.TEMPLATE provider
+# ----------------------------------------------------------------------------
+
+module "ws_TEMPLATE_storage_credentials" {
+  source   = "../../modules/databricks/workspace/storage_credential"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_storage_credentials : {}
+
+  config = each.value
+
+  # Pass lookup maps from foundation state for key resolution
+  access_connectors_map = local.access_connectors_map
+  workspaces_map        = local.workspaces_map
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_external_locations" {
+  source   = "../../modules/databricks/workspace/external_location"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_external_locations : {}
+
+  config     = each.value
+  depends_on = [module.ws_TEMPLATE_storage_credentials]
+
+  # Pass lookup maps from foundation state for key resolution
+  workspaces_map = local.workspaces_map
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_catalogs" {
+  source   = "../../modules/databricks/workspace/catalog"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_catalogs : {}
+
+  config     = each.value
+  depends_on = [module.ws_TEMPLATE_external_locations]
+
+  # Pass lookup maps from foundation state for key resolution
+  workspaces_map = local.workspaces_map
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_schemas" {
+  source   = "../../modules/databricks/workspace/schema"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_schemas : {}
+
+  config     = each.value
+  depends_on = [module.ws_TEMPLATE_catalogs]
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_cluster_policies" {
+  source   = "../../modules/databricks/workspace/cluster_policy"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_cluster_policies : {}
+
+  config = each.value
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_clusters" {
+  source   = "../../modules/databricks/workspace/cluster"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_clusters : {}
+
+  config     = each.value
+  depends_on = [module.ws_TEMPLATE_cluster_policies]
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_sql_warehouses" {
+  source   = "../../modules/databricks/workspace/sql_warehouse"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_sql_warehouses : {}
+
+  config = each.value
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_workspace_folders" {
+  source   = "../../modules/databricks/workspace/workspace_folder"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_workspace_folders : {}
+
+  config = each.value
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_queries" {
+  source   = "../../modules/databricks/workspace/query"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_queries : {}
+
+  config     = each.value
+  depends_on = [module.ws_TEMPLATE_sql_warehouses]
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_alerts" {
+  source   = "../../modules/databricks/workspace/alert"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_alerts : {}
+
+  config     = each.value
+  depends_on = [module.ws_TEMPLATE_queries]
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}
+
+module "ws_TEMPLATE_workspace_permissions" {
+  source   = "../../modules/databricks/workspace/workspace_permissions"
+  for_each = var.workspace_TEMPLATE_host != "" ? local.ws_TEMPLATE_enabled_workspace_permissions : {}
+
+  config = each.value
+
+  providers = {
+    databricks = databricks.TEMPLATE
+  }
+}

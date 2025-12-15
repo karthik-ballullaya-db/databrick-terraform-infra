@@ -1,0 +1,31 @@
+# ============================================================================
+# Workspaces Stack - Example tfvars
+# ============================================================================
+# Copy this file to terraform.tfvars and update with workspace URLs
+# Get URLs from: cd stacks/foundation && terraform output workspace_urls
+# ============================================================================
+
+# Workspace URLs (from foundation stack outputs)
+# These connect the workspace stack to the actual Databricks workspaces
+
+# Dev workspace - always required
+workspace_dev_host = "https://adb-1234567890123456.7.azuredatabricks.net"
+
+# Prod workspace - set empty string to skip
+workspace_prod_host = ""
+
+# Analytics workspace - set empty string to skip
+workspace_analytics_host = ""
+
+# ============================================================================
+# Environment
+# ============================================================================
+environment = "dev"
+
+# ============================================================================
+# Adding a new workspace:
+# 1. Add variable in variables.tf: workspace_<name>_host
+# 2. Set the URL here: workspace_<name>_host = "https://..."
+# 3. Create resources in: resources/workspaces/<name>/
+# ============================================================================
+

@@ -1,0 +1,26 @@
+# ============================================================================
+# Foundation Stack - Example tfvars
+# ============================================================================
+# Copy this file to terraform.tfvars and update values
+# ============================================================================
+
+# Databricks Account Configuration
+databricks_account_id   = "your-databricks-account-id"
+databricks_account_host = "https://accounts.azuredatabricks.net"
+
+# Environment
+environment      = "dev"
+default_location = "eastus"
+
+# Default Tags
+default_tags = {
+  ManagedBy   = "Terraform"
+  Project     = "Databricks-Multi-Workspace"
+  Environment = "dev"
+}
+
+# ============================================================================
+# Note: Most resources are configured via JSON files in resources/
+# Use these variables only for tfvars-based overrides
+# ============================================================================
+
