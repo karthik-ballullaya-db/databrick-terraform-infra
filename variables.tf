@@ -38,6 +38,12 @@ variable "default_tags" {
   }
 }
 
+variable "config_file_pattern" {
+  type        = string
+  description = "Glob pattern used to load per-resource JSON config files under resources/. Override to scope a deployment to a subset (e.g. \"*att_cdo.json\")."
+  default     = "*.json"
+}
+
 variable "resource_groups" {
   type        = map(any)
   description = "Map of resource group configurations"

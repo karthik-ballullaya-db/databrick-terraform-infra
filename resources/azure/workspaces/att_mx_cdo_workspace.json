@@ -1,5 +1,5 @@
 {
-  "enabled": false,
+  "enabled": true,
   "workspace_name": "sjwstest2",
   "resource_group_name": "testTerraform",
   "location": "eastus",

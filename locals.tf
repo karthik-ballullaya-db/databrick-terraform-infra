@@ -1,7 +1,7 @@
 locals {
   # Resource Groups
   resource_groups = {
-    for f in try(fileset("${path.module}/resources/azure/resource_groups", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/azure/resource_groups", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/resource_groups/${f}"))
   }
   all_resource_groups = merge(local.resource_groups, var.resource_groups)
@@ -12,7 +12,7 @@ locals {
 
   # Workspaces (VNet-Injected)
   workspaces = {
-    for f in try(fileset("${path.module}/resources/azure/workspaces", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/azure/workspaces", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/workspaces/${f}"))
   }
   all_workspaces = merge(local.workspaces, var.workspaces)
@@ -23,7 +23,7 @@ locals {
 
   # Storage Accounts
   storage_accounts_raw = {
-    for f in try(fileset("${path.module}/resources/azure/storage_accounts", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/azure/storage_accounts", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/storage_accounts/${f}"))
   }
   
@@ -86,7 +86,7 @@ locals {
 
   # Key Vaults
   key_vaults = {
-    for f in try(fileset("${path.module}/resources/azure/key_vaults", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/azure/key_vaults", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/key_vaults/${f}"))
   }
   all_key_vaults = merge(local.key_vaults, var.key_vaults)
@@ -97,7 +97,7 @@ locals {
 
   # Data Factories
   data_factories = {
-    for f in try(fileset("${path.module}/resources/azure/data_factories", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/azure/data_factories", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/data_factories/${f}"))
   }
   all_data_factories = merge(local.data_factories, var.data_factories)
@@ -108,7 +108,7 @@ locals {
 
   # Virtual Machines
   vms = {
-    for f in try(fileset("${path.module}/resources/azure/vms", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/azure/vms", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/vms/${f}"))
   }
   all_vms = merge(local.vms, var.vms)
@@ -119,7 +119,7 @@ locals {
 
   # VNets
   vnets = {
-    for f in try(fileset("${path.module}/resources/azure/vnets", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/azure/vnets", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/vnets/${f}"))
   }
   all_vnets = merge(local.vnets, var.vnets)
@@ -130,7 +130,7 @@ locals {
 
   # Access Connectors
   access_connectors = {
-    for f in try(fileset("${path.module}/resources/azure/access_connectors", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/azure/access_connectors", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/azure/access_connectors/${f}"))
   }
   all_access_connectors = merge(local.access_connectors, var.access_connectors)
@@ -145,7 +145,7 @@ locals {
 
   # Metastores
   metastores = {
-    for f in try(fileset("${path.module}/resources/databricks/account/metastores", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/account/metastores", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/metastores/${f}"))
   }
   all_metastores = merge(local.metastores, var.metastores)
@@ -156,7 +156,7 @@ locals {
 
   # Metastore Assignments
   metastore_assignments_raw = {
-    for f in try(fileset("${path.module}/resources/databricks/account/metastore_assignments", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/account/metastore_assignments", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/metastore_assignments/${f}"))
   }
   
@@ -189,7 +189,7 @@ locals {
 
   # Budget Policies
   budget_policies_raw = {
-    for f in try(fileset("${path.module}/resources/databricks/account/budget_policies", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/account/budget_policies", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/budget_policies/${f}"))
   }
   
@@ -218,7 +218,7 @@ locals {
 
   # NCC (Network Connectivity Configs)
   ncc_configs_raw = {
-    for f in try(fileset("${path.module}/resources/databricks/account/ncc", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/account/ncc", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/ncc/${f}"))
   }
   
@@ -246,7 +246,7 @@ locals {
 
   # NCC Private Endpoints
   ncc_private_endpoints_raw = {
-    for f in try(fileset("${path.module}/resources/databricks/account/ncc_private_endpoints", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/account/ncc_private_endpoints", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/ncc_private_endpoints/${f}"))
   }
   
@@ -278,7 +278,7 @@ locals {
 
   # Service Principals
   service_principals = {
-    for f in try(fileset("${path.module}/resources/databricks/account/service_principals", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/account/service_principals", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/service_principals/${f}"))
   }
   all_service_principals = merge(local.service_principals, var.service_principals)
@@ -293,7 +293,7 @@ locals {
 
   # Storage Credentials
   storage_credentials_raw = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/storage_credentials", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/storage_credentials", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/storage_credentials/${f}"))
   }
   
@@ -330,7 +330,7 @@ locals {
 
   # External Locations
   external_locations_raw = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/external_locations", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/external_locations", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/external_locations/${f}"))
   }
   
@@ -358,7 +358,7 @@ locals {
 
   # Catalogs
   catalogs_raw = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/catalogs", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/catalogs", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/catalogs/${f}"))
   }
   
@@ -386,7 +386,7 @@ locals {
 
   # Schemas
   schemas = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/schemas", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/schemas", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/schemas/${f}"))
   }
   all_schemas = merge(local.schemas, var.schemas)
@@ -397,7 +397,7 @@ locals {
 
   # Clusters
   clusters = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/clusters", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/clusters", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/clusters/${f}"))
   }
   all_clusters = merge(local.clusters, var.clusters)
@@ -408,7 +408,7 @@ locals {
 
   # Cluster Policies
   cluster_policies = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/cluster_policies", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/cluster_policies", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/cluster_policies/${f}"))
   }
   all_cluster_policies = merge(local.cluster_policies, var.cluster_policies)
@@ -419,7 +419,7 @@ locals {
 
   # SQL Warehouses
   sql_warehouses = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/sql_warehouses", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/sql_warehouses", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/sql_warehouses/${f}"))
   }
   all_sql_warehouses = merge(local.sql_warehouses, var.sql_warehouses)
@@ -430,7 +430,7 @@ locals {
 
   # Workspace Folders
   workspace_folders = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/workspace_folders", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/workspace_folders", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/workspace_folders/${f}"))
   }
   all_workspace_folders = merge(local.workspace_folders, var.workspace_folders)
@@ -441,7 +441,7 @@ locals {
 
   # Queries
   queries = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/queries", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/queries", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/queries/${f}"))
   }
   all_queries = merge(local.queries, var.queries)
@@ -452,7 +452,7 @@ locals {
 
   # Alerts
   alerts = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/alerts", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/alerts", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/alerts/${f}"))
   }
   all_alerts = merge(local.alerts, var.alerts)
@@ -463,7 +463,7 @@ locals {
 
   # Workspace Permissions
   workspace_permissions = {
-    for f in try(fileset("${path.module}/resources/databricks/workspace/workspace_permissions", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/workspace/workspace_permissions", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/workspace/workspace_permissions/${f}"))
   }
   all_workspace_permissions = merge(local.workspace_permissions, var.workspace_permissions)
@@ -474,7 +474,7 @@ locals {
 
   # Workspace Admin Assignments
   workspace_admin_assignments_raw = {
-    for f in try(fileset("${path.module}/resources/databricks/account/workspace_admin_assignments", "*.json"), []) :
+    for f in try(fileset("${path.module}/resources/databricks/account/workspace_admin_assignments", var.config_file_pattern), []) :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/resources/databricks/account/workspace_admin_assignments/${f}"))
   }
   

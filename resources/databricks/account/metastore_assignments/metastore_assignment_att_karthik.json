@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "workspace_id": "${module.workspaces[\"dbx_ws_att_karthik\"].workspace_id}",
+  "metastore_id": "d1ffebbb-cc8b-45bd-8130-3b3bfb47d16a",
+  "default_catalog_name": "main",
+  "comment": "Assigns existing Unity Catalog metastore to the att-cdo workspace. Replace <METASTORE_ID> with the real metastore UUID before terraform apply."
+}

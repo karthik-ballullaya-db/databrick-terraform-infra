@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "name": "rg-att-cdo",
+  "location": "eastus",
+  "tags": {
+    "environment": "prod",
+    "project": "att-mx-cdo",
+    "managed_by": "terraform",
+    "remove_after": "2026-04-30",
+    "owner": "karthik.ballullaya@databricks.com"
+  }
+}
